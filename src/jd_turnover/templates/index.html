@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>京东自营周转数据处理</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>京东自营周转数据处理</h1>
+            <p class="subtitle">上传京东通用版纵版底表, 自动计算补货量并生成采购下单表</p>
+        </header>
+
+        <div id="dropZone" class="drop-zone">
+            <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden>
+            <div class="drop-zone-content">
+                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#999" stroke-width="2">
+                    <path d="M24 34V14M16 22l8-8 8 8M10 38h28a4 4 0 0 0 4-4V18a4 4 0 0 0-4-4H10a4 4 0 0 0-4 4v16a4 4 0 0 0 4 4z"/>
+                </svg>
+                <p>拖拽文件到此处, 或 <span class="link">点击选择文件</span></p>
+                <p class="hint">支持 .csv / .xlsx / .xls, 最大 50MB</p>
+            </div>
+        </div>
+
+        <div id="progress" class="progress hidden">
+            <div class="spinner"></div>
+            <p>正在处理...</p>
+        </div>
+
+        <div id="result" class="result hidden">
+            <div class="result-header">
+                <h2>处理结果</h2>
+                <span id="fileInfo" class="file-info"></span>
+            </div>
+            <div id="stats" class="stats"></div>
+            <button id="downloadBtn" class="btn-primary">下载处理结果 (3 Sheet Excel)</button>
+            <div class="table-wrapper">
+                <table id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="error" class="error hidden"></div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
