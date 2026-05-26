@@ -3,16 +3,20 @@
 启动: uvicorn jd_turnover.main:app --host 0.0.0.0 --port 8000
 """
 
+import os
+import secrets
 from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request as StarletteRequest
 from jinja2 import Environment, FileSystemLoader
 from loguru import logger
 
-from jd_turnover.config import UPLOAD_DIR, OUTPUT_DIR, ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_MB
+from jd_turnover.config import UPLOAD_DIR, OUTPUT_DIR, ALLOWED_EXTENSIONS, MAX_UPLOAD_SIZE_MB, ACCESS_PASSWORD
 from jd_turnover.data.loader import load_file
 from jd_turnover.data.cleaner import drop_empty_rows, normalize_columns
 from jd_turnover.processing.turnover import process
@@ -31,6 +35,43 @@ _jinja_env = Environment(loader=FileSystemLoader(str(templates_dir)))
 
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+# --- 密码认证中间件 ---
+_SKIP_AUTH = ACCESS_PASSWORD == ""
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: StarletteRequest, call_next):
+        if _SKIP_AUTH or request.url.path == "/health":
+            return await call_next(request)
+
+        token = request.cookies.get("jd_token", "")
+        if token and token == _gen_token():
+            return await call_next(request)
+
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Basic "):
+            try:
+                import base64
+                decoded = base64.b64decode(auth[6:]).decode()
+                user, pwd = decoded.split(":", 1)
+                if user == "admin" and pwd == ACCESS_PASSWORD:
+                    resp = await call_next(request)
+                    resp.set_cookie("jd_token", _gen_token(), httponly=True, max_age=86400)
+                    return resp
+            except Exception:
+                pass
+
+        return Response(
+            status_code=401,
+            headers={"WWW-Authenticate": 'Basic realm="JD Turnover"'},
+            content="Authentication required. Please refresh and enter password.",
+        )
+
+def _gen_token():
+    return secrets.token_hex(16)
+
+app.add_middleware(AuthMiddleware)
 
 
 @app.get("/", response_class=HTMLResponse)
