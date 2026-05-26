@@ -1,0 +1,14 @@
+# 京东自营周转数据处理
+coverage
+dist
+*.egg-info
+__pycache__
+*.pyc
+.cache
+.spool
+*.log
+.DS_Store
+uploads/*
+!uploads/.gitkeep
+output/*
+!output/.gitkeep
